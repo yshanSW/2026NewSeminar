@@ -1,0 +1,113 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pop Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0b2a5a; --blue:#1e40af; --sky:#3b82f6; --ice:#eaf2ff;
+  --bg1:#f6f9ff; --bg2:#ffffff; --shadow:0 22px 60px rgba(30,64,175,.14);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; font-family:'Noto Sans KR',sans-serif; font-size:200%;
+  background:linear-gradient(180deg,var(--bg1),var(--bg2)); color:var(--navy);
+}
+.screen{display:none;height:100%;align-items:center;justify-content:center}
+.screen.active{display:flex}
+.cover{
+  text-align:center; padding:40px; max-width:900px;
+}
+.cover h1{font-size:2.2em;margin-bottom:0.4em}
+.cover p{font-size:1em;color:#35507a;margin-bottom:1.6em}
+button{
+  font-size:1em; padding:18px 32px; border-radius:24px; cursor:pointer;
+  border:none; background:var(--blue); color:#fff; font-weight:700;
+  box-shadow:0 12px 28px rgba(30,64,175,.25);
+}
+.quiz{padding:32px;max-width:1200px;width:100%}
+.timer{font-weight:800;margin-bottom:10px}
+.q{font-size:1.4em;margin:20px 0}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.opt{border:2px solid #cfe0ff;border-radius:22px;padding:26px}
+.actions{margin-top:28px;display:flex;gap:18px;flex-wrap:wrap}
+.reveal{margin-top:28px;display:none;background:var(--ice);padding:26px;border-radius:22px}
+.reveal.show{display:block}
+</style>
+</head>
+<body>
+
+<!-- Cover Page -->
+<div class="screen active" id="cover">
+  <div class="cover">
+    <h1>사회복지 퀴즈</h1>
+    <p>사회복지의 개념·제도·역사를 확인하는 퀴즈입니다.<br>
+       각 문항은 15초 제한시간이 있습니다.</p>
+    <button id="startBtn">시작하기</button>
+  </div>
+</div>
+
+<!-- Quiz Page -->
+<div class="screen" id="quiz">
+  <div class="quiz">
+    <div class="timer" id="timerText">15초</div>
+    <div class="q" id="qtext"></div>
+    <div class="opts" id="opts"></div>
+
+    <div class="actions">
+      <button id="timerBtn">타이머 시작</button>
+      <button id="revealBtn">정답 · 해설</button>
+      <button id="prevBtn">이전</button>
+      <button id="nextBtn">다음</button>
+    </div>
+
+    <div class="reveal" id="reveal">
+      <b>정답:</b> <span id="ans"></span><br><br>
+      <span id="exp"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+const QUIZ = [{"order": 1, "question": "사회복지의 주된 초점은 개인의 욕구충족이다", "options": ["예", "아니오"], "answer": "아니오", "explanation": "사회복지는 사회가 사회적 목적을 달성하기 위해 개발하고 제도화한 제반 수단이다. 따라서, 사회복지 정책과 서비스는 개인에게 이익이 될뿐 아니라, 사회 전체의 이익에도 중요하게 작용하게 된다."}, {"order": 2, "question": "사회복지는 취약계층만을 위한 것이다", "options": ["예", "아니오"], "answer": "아니오", "explanation": "사회복지는 사회적 위험에 대응함으로써 개인과 사회 전체의 안녕을 증진하려는 모든 형태의 사회적 노력이기 때문에 특수한 니즈가 있는 취약자에 대한 선별적 지원뿐 아니라, 모두에게 적용되는 보편적인 지원도 포함된다."}, {"order": 3, "question": "사회복지학과 교수님은 총 9명이다.", "options": ["예", "아니오"], "answer": "아니오", "explanation": "총 11명입니다(김혜란, 이봉주, 구인회, 강상경, 홍백의, 박정민, 유조안, 하정화, 김수영, 한윤선, 이종성)"}, {"order": 4, "question": "서울대학교 사회복지학과 졸업생은 주로 사회복지사가 된다.", "options": ["예", "아니오"], "answer": "아니오", "explanation": "사회복지학과 졸업생들은 공공, 교육과 연구, 민산 사회혁신 분야, 법조계 등 다양한 분야에서 활동하고 있습니다."}, {"order": 5, "question": "1987년 제정된 사회복지사업법의 주요 내용으로 옳은 것은?", "options": ["사회복지관 의무적 설치", "사회복지사의 국가자격제도입 근거 마련", "국민연금의 확대", "아동복지정책 전면 시행"], "answer": "사회복지사의 국가자격제도입 근거 마련", "explanation": "1987년에 제정된 사회복지사업법은 우리나라 사회복지사의 전문성과 자질을 확보하기 위해 국가자격제의 법적 근거를 마련한 중요한 법률이다."}, {"order": 6, "question": "빈곤층을 포괄적으로 지원하는 국민기초생활보장법의 시행 배경은 무엇인가?", "options": ["외환위기 이후 실업자 증가", "6·25 전쟁 이후 고아 증가", "의료보험의 확대", "노인 인구의 급증"], "answer": "외환위기 이후 실업자 증가", "explanation": "1997년 IMF 외환위기 이후 사회안전망 강화 필요성이 증대되었다."}, {"order": 7, "question": "2026년 사회복지 분야의 예산 편성액?", "options": ["49조 원", "149조 원", "249조 원", "349조 원"], "answer": "249조 원", "explanation": "전체 예산 728조 원 중 약 34%에 해당한다."}, {"order": 8, "question": "우리나라최초의 지역사회복지관으로 평가받는 기관은?", "options": ["삼남보호소", "조선후생원", "태화여자관", "홀트씨양자회"], "answer": "태화여자관", "explanation": "1922년 설립된 우리나라 최초의 여성 지역사회복지관이다."}, {"order": 9, "question": "아동보호전문기관에는 공동생활가정과 아동양육시설이 포함된다.", "options": ["예", "아니오"], "answer": "아니오", "explanation": "아동보호전문기관은 학대 대응 전담기관이다."}, {"order": 10, "question": "대한민국에서 가장 먼저 시행된 사회보험의 명칭을 쓰시오.", "options": ["국민연금", "건강보험 (장기요양보험 포함)", "고용보험", "산재보험"], "answer": "산재보험", "explanation": "1964년 7월 1일부터 시행되었다."}];
+let i=0, timerId=null, remaining=15;
+const g=id=>document.getElementById(id);
+const words={5:"five",4:"four",3:"three",2:"two",1:"one"};
+
+function speak(n){
+  if(!window.speechSynthesis) return;
+  const u=new SpeechSynthesisUtterance(words[n]);
+  u.lang="en-US"; window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
+}
+
+function resetTimer(){ clearInterval(timerId); remaining=15; g("timerText").textContent="15초"; }
+function startTimer(){
+  resetTimer();
+  timerId=setInterval(()=>{
+    remaining--; g("timerText").textContent=remaining+"초";
+    if(remaining<=5 && remaining>0) speak(remaining);
+    if(remaining===0) clearInterval(timerId);
+  },1000);
+}
+
+function render(){
+  const q=QUIZ[i];
+  g("qtext").textContent=q.question;
+  g("opts").innerHTML="";
+  q.options.forEach(o=>{const d=document.createElement("div");d.className="opt";d.textContent=o;g("opts").appendChild(d);});
+  g("reveal").classList.remove("show");
+  resetTimer();
+}
+
+g("startBtn").onclick=()=>{ g("cover").classList.remove("active"); g("quiz").classList.add("active"); render(); };
+g("timerBtn").onclick=startTimer;
+g("revealBtn").onclick=()=>{ g("ans").textContent=QUIZ[i].answer; g("exp").textContent=QUIZ[i].explanation; g("reveal").classList.add("show"); };
+g("prevBtn").onclick=()=>{ if(i>0)i--; render(); };
+g("nextBtn").onclick=()=>{ if(i<QUIZ.length-1)i++; render(); };
+</script>
+</body>
+</html>
