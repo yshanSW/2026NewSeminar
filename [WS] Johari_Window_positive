@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>Joahari Window Worksheet (positive)_V1</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 20px; font-family: Arial, Helvetica, sans-serif; background-color: #f5f5f5; color: #222; }
+    h1 { margin-bottom: 0.3rem; }
+    .grid-checklists { display: grid; grid-template-columns: repeat(2, minmax(260px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .panel { background-color: #ffffff; padding: 12px 14px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+    .checklist { max-height: 360px; overflow-y: auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 8px; row-gap: 3px; }
+    table#resultTable { width: 100%; border-collapse: collapse; margin-top: 20px; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+    #resultTable th, #resultTable td { border: 1px solid #e0e0e0; padding: 10px; }
+    .area-title { font-weight: 700; color: #333; margin-bottom: 6px; }
+    button { padding: 8px 16px; background-color: #4f81bd; border: none; border-radius: 6px; color: white; cursor: pointer; margin-right: 10px; }
+    #pdfSection { font-size: 16px !important; }
+    #pdfSection * { font-size: 16px !important; }
+  </style>
+</head>
+
+<body>
+
+<h1>조하리 윈도우 워크시트 (강점 형용사)</h1>
+
+<p>
+이 활동지는 Johari Window의 형용사 57개 checklist가 아닌,
+MYGROW(https://www.mygrow.me/)의 &quot;Personal Strengths List&quot;를 번역한 것을 바탕으로 제작되었습니다.
+SELF와 OTHER1·OTHER2·OTHER3은 모두 SELF를 설명하는 형용사(가급적 5개 이상)을 선택해주시기 바랍니다.
+다른 사람의 답변을 보지 않도록 주의해주세요.<br>
+표시 형식: <b>한국어 (English)</b>
+</p>
+
+<div class="grid-checklists">
+  <div class="panel"><h2>SELF</h2><div id="SELF" class="checklist"></div></div>
+  <div class="panel"><h2>OTHER1</h2><div id="OTHER1" class="checklist"></div></div>
+  <div class="panel"><h2>OTHER2</h2><div id="OTHER2" class="checklist"></div></div>
+  <div class="panel"><h2>OTHER3</h2><div id="OTHER3" class="checklist"></div></div>
+</div>
+
+<button id="generateBtn">조하리 윈도우 생성</button>
+<button id="savePDF">PDF로 저장하기</button>
+
+<div id="pdfSection">
+<table id="resultTable">
+  <thead>
+    <tr>
+      <th></th>
+      <th>SELF 선택</th>
+      <th>SELF 미선택</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>OTHER 선택</th>
+      <td id="openArea">
+        <div class="area-title">열린 창(Open window)</div>
+        <ul class="cell-list"></ul>
+      </td>
+      <td id="blindSpot">
+        <div class="area-title">눈먼 창(Blind window)</div>
+        <ul class="cell-list"></ul>
+      </td>
+    </tr>
+    <tr>
+      <th>OTHER 미선택</th>
+      <td id="hiddenArea">
+        <div class="area-title">감춘 창(Hidden window)</div>
+        <ul class="cell-list"></ul>
+      </td>
+      <td id="unknownArea">
+        <div class="area-title">미지의 창(Unknown window)</div>
+        <ul class="cell-list"></ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<script>
+const adjectives = [
+  ["야심찬", "Ambitious"], ["미와 탁월함을 알아보는", "Appreciation for beauty and excellence"],
+  ["진정성 있는", "Authentic"], ["용감한", "Brave"], ["자신감 있는", "Confident"],
+  ["창의적인", "Creative"], ["호기심 많은", "Curious"], ["헌신적인", "Dedicated"],
+  ["공감 능력 높은", "Empathetic"], ["열정적인", "Enthusiastic"], ["공정한", "Fair"],
+  ["유연한", "Flexible"], ["용서하는", "Forgiving"], ["감사하는", "Grateful"],
+  ["정직한", "Honest"], ["희망적인", "Hopeful"], ["겸손한", "Humble"],
+  ["유머러스한", "Humorous"], ["원칙이 뚜렷한", "Integrity"], ["포용적인", "Inclusive"],
+  ["친절한", "Kind"], ["리더십 있는", "Leadership"], ["학습을 즐기는", "Learning"],
+  ["경청하는", "Listening"], ["논리적인", "Logical"], ["동기부여가 높은", "Motivated"],
+  ["협상 능력이 뛰어난", "Negotiation skills"], ["열린 마음을 가진", "Open minded"],
+  ["낙관적인", "Optimistic"], ["평화 조정자 역할을 하는", "Peacekeeper"],
+  ["끈기 있는", "Persistence"], ["넓은 관점을 가진", "Perspective"], ["신중한", "Prudence"],
+  ["책임감 있는", "Responsible"], ["자기 통제력이 있는", "Self-controlled"],
+  ["영성을 중시하는", "Spirituality"], ["팀플레이가 좋은", "Team player"],
+  ["시간 관리를 잘하는", "Time management"], ["신뢰할 수 있는", "Trustworthy"],
+  ["비전을 제시하는", "Visionary"]
+];
+
+const raters = ["SELF", "OTHER1", "OTHER2", "OTHER3"];
+
+function createChecklist() {
+  raters.forEach(rater => {
+    const box = document.getElementById(rater);
+    adjectives.forEach(([kor, eng]) => {
+      const div = document.createElement("div");
+      div.className = "check-item";
+
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.dataset.rater = rater;
+      cb.dataset.value = eng;
+
+      const label = document.createElement("label");
+      label.textContent = `${kor} (${eng})`;
+
+      div.appendChild(cb);
+      div.appendChild(label);
+      box.appendChild(div);
+    });
+  });
+}
+
+function getSelections(rater) {
+  return [...document.querySelectorAll(`input[data-rater="${rater}"]:checked`)].map(x => x.dataset.value);
+}
+
+function updateCell(id, list) {
+  const ul = document.querySelector(`#${id} .cell-list`);
+  ul.innerHTML = "";
+  list.forEach(eng => {
+    const kor = adjectives.find(a => a[1] === eng)[0];
+    const li = document.createElement("li");
+    li.textContent = `${kor} (${eng})`;
+    ul.appendChild(li);
+  });
+}
+
+function computeJohariWindow() {
+  const selfSet = new Set(getSelections("SELF"));
+  const otherSet = new Set();
+
+  ["OTHER1", "OTHER2", "OTHER3"].forEach(r => getSelections(r).forEach(a => otherSet.add(a)));
+
+  const open = [], hidden = [], blind = [], unknown = [];
+
+  adjectives.forEach(([kor, eng]) => {
+    const s = selfSet.has(eng);
+    const o = otherSet.has(eng);
+
+    if (s && o) open.push(eng);
+    else if (s && !o) hidden.push(eng);
+    else if (!s && o) blind.push(eng);
+    else unknown.push(eng);
+  });
+
+  updateCell("openArea", open);
+  updateCell("hiddenArea", hidden);
+  updateCell("blindSpot", blind);
+  updateCell("unknownArea", unknown);
+}
+
+document.getElementById("savePDF").addEventListener("click", async () => {
+  const section = document.getElementById("pdfSection");
+  const canvas = await html2canvas(section, { scale: 2 });
+  const imgData = canvas.toDataURL("image/png");
+  const pdf = new jspdf.jsPDF("p", "mm", "a4");
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const margin = 10;
+  const pdfWidth = pageWidth - margin * 2;
+  const pdfHeight = canvas.height * (pdfWidth / canvas.width);
+  pdf.addImage(imgData, "PNG", margin, margin, pdfWidth, pdfHeight);
+  pdf.save("Johari_Result.pdf");
+});
+
+document.getElementById("generateBtn").addEventListener("click", computeJohariWindow);
+createChecklist();
+</script>
+
+</body>
+</html>
