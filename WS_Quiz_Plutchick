@@ -1,0 +1,236 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Plutchik Emotion Dyads Quiz</title>
+<style>
+  * { box-sizing:border-box; }
+  html,body {
+    margin:0; padding:0; height:100%;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,Helvetica,sans-serif;
+    background:radial-gradient(circle at top,#f1f7ff 0,#dde9ff 40%,#f8fbff 100%);
+    color:#123047;
+  }
+  body { display:flex; align-items:center; justify-content:center; padding:20px; }
+
+  .deck {
+    width:100%; max-width:960px; height:80vh; max-height:620px;
+    background:#fff; border-radius:18px;
+    box-shadow:0 16px 40px rgba(15,59,112,0.25);
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+
+  .deck-header {
+    padding:12px 20px; background:linear-gradient(90deg,#c92a2a,#f08c00);
+    color:#fff; display:flex; justify-content:space-between; align-items:center;
+  }
+
+  .deck-main {
+    flex:1; padding:20px 26px 10px;
+    display:flex; justify-content:center; align-items:center;
+  }
+
+  .center-wrap {
+    width:100%; max-width:640px;
+    display:flex; flex-direction:column; align-items:center;
+  }
+
+  .slide-meta {
+    display:flex; justify-content:space-between; width:100%;
+    margin-bottom:10px; font-size:0.9rem;
+  }
+
+  .pill {
+    padding:4px 10px; border-radius:999px; font-size:0.8rem;
+    background:rgba(37,99,235,0.06); color:#1e3a8a;
+  }
+  .pill.secondary {
+    background:rgba(0,0,0,0.03); color:#4b5563;
+  }
+
+  .pair-label { font-size:1rem; margin-bottom:10px; }
+
+  .emotion-pair { display:flex; gap:18px; margin-bottom:18px; }
+  .emotion-box {
+    min-width:150px; padding:10px 12px;
+    border-radius:12px; font-weight:600; text-align:center;
+    box-shadow:0 3px 8px rgba(15,23,42,0.22);
+  }
+
+  .question-text {
+    margin:6px 0 16px; font-size:0.95rem; text-align:center;
+  }
+
+  .answer-box {
+    min-height:60px; padding:10px 16px;
+    border:1px dashed rgba(55,65,81,0.55);
+    border-radius:12px; background:#f9fafb;
+    display:flex; justify-content:center; align-items:center;
+  }
+  .answer-box.hidden { color:#6b7280; }
+
+  .controls {
+    padding:10px 18px; background:#f4f6fb;
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:0.9rem;
+  }
+
+  .btn { padding:6px 14px; border-radius:999px; cursor:pointer; }
+  .btn.main { background:#2563eb; color:#fff; }
+  .btn.ghost { background:#fff; border:1px solid #ccc; }
+
+</style>
+</head>
+
+<body>
+<div class="deck">
+  <header class="deck-header">
+    <div>Plutchik 감정 조합 퀴즈</div>
+    <div>← → keys</div>
+  </header>
+
+  <main class="deck-main">
+    <div class="center-wrap">
+      <div class="slide-meta">
+        <span id="category-pill" class="pill"></span>
+        <span id="freq-pill" class="pill secondary"></span>
+      </div>
+
+      <div id="pair-label" class="pair-label"></div>
+      <div id="emotion-pair" class="emotion-pair"></div>
+
+      <div id="question-text" class="question-text">
+        두 가지 감정이 합쳐지면 어떤 감정이 될까요?
+      </div>
+
+      <button id="show-answer-btn" class="btn main">정답 보기 · Show Answer</button>
+      <div id="answer-box" class="answer-box hidden">정답이 여기 표시됩니다.</div>
+    </div>
+  </main>
+
+  <footer class="controls">
+    <button id="prev-btn" class="btn ghost">◀ 이전</button>
+    <span>Slide <span id="slide-number">1</span> / <span id="slide-total">28</span></span>
+    <button id="next-btn" class="btn ghost">다음 ▶</button>
+  </footer>
+</div>
+
+<script>
+const emotionMeta = {
+  joy:{en:"joy",ko:"기쁨",color:"#FFD43B"},
+  trust:{en:"trust",ko:"신뢰",color:"#69DB7C"},
+  fear:{en:"fear",ko:"두려움",color:"#15AABF"},
+  surprise:{en:"surprise",ko:"놀람",color:"#228BE6"},
+  sadness:{en:"sadness",ko:"슬픔",color:"#4C6EF5"},
+  disgust:{en:"disgust",ko:"혐오",color:"#7950F2"},
+  anger:{en:"anger",ko:"분노",color:"#FA5252"},
+  anticipation:{en:"anticipation",ko:"기대",color:"#FD7E14"}
+};
+
+const slides = [
+      {category:"PRIMARY",freq:"often",pair:["joy","trust"],answerEn:"love",answerKo:"사랑"},
+      {category:"PRIMARY",freq:"often",pair:["trust","fear"],answerEn:"submission",answerKo:"복종"},
+      {category:"PRIMARY",freq:"often",pair:["fear","surprise"],answerEn:"alarm",answerKo:"경계"},
+      {category:"PRIMARY",freq:"often",pair:["surprise","sadness"],answerEn:"disappointment",answerKo:"실망"},
+      {category:"PRIMARY",freq:"often",pair:["sadness","disgust"],answerEn:"remorse",answerKo:"회한"},
+      {category:"PRIMARY",freq:"often",pair:["disgust","anger"],answerEn:"contempt",answerKo:"경멸"},
+      {category:"PRIMARY",freq:"often",pair:["anger","anticipation"],answerEn:"aggression",answerKo:"공격성"},
+      {category:"PRIMARY",freq:"often",pair:["anticipation","joy"],answerEn:"optimism",answerKo:"낙관"},
+      {category:"SECONDARY",freq:"sometimes",pair:["joy","fear"],answerEn:"guilt",answerKo:"죄책감"},
+      {category:"SECONDARY",freq:"sometimes",pair:["trust","surprise"],answerEn:"curiosity",answerKo:"호기심"},
+      {category:"SECONDARY",freq:"sometimes",pair:["fear","sadness"],answerEn:"despair",answerKo:"절망"},
+      {category:"SECONDARY",freq:"sometimes",pair:["surprise","disgust"],answerEn:"unbelief",answerKo:"불신"},
+      {category:"SECONDARY",freq:"sometimes",pair:["sadness","anger"],answerEn:"envy",answerKo:"시기"},
+      {category:"SECONDARY",freq:"sometimes",pair:["disgust","anticipation"],answerEn:"cynicism",answerKo:"냉소"},
+      {category:"SECONDARY",freq:"sometimes",pair:["anger","joy"],answerEn:"pride",answerKo:"자부심"},
+      {category:"SECONDARY",freq:"sometimes",pair:["anticipation","trust"],answerEn:"hope",answerKo:"희망"},
+      {category:"TERTIARY",freq:"seldom",pair:["joy","surprise"],answerEn:"delight",answerKo:"기쁨"},
+      {category:"TERTIARY",freq:"seldom",pair:["trust","sadness"],answerEn:"sentimentality",answerKo:"감상성"},
+      {category:"TERTIARY",freq:"seldom",pair:["fear","disgust"],answerEn:"shame",answerKo:"수치심"},
+      {category:"TERTIARY",freq:"seldom",pair:["surprise","anger"],answerEn:"outrage",answerKo:"격분"},
+      {category:"TERTIARY",freq:"seldom",pair:["sadness","anticipation"],answerEn:"pessimism",answerKo:"비관"},
+      {category:"TERTIARY",freq:"seldom",pair:["disgust","joy"],answerEn:"morbidness",answerKo:"병적 집착"},
+      {category:"TERTIARY",freq:"seldom",pair:["anger","trust"],answerEn:"dominance",answerKo:"지배욕"},
+      {category:"TERTIARY",freq:"seldom",pair:["anticipation","fear"],answerEn:"anxiety",answerKo:"불안"},
+      {category:"OPPOSITE",freq:"opposite",pair:["joy","sadness"],answerEn:"bittersweetness",answerKo:"씁쓸한 기쁨"},
+      {category:"OPPOSITE",freq:"opposite",pair:["trust","disgust"],answerEn:"ambivalence",answerKo:"양가감정"},
+      {category:"OPPOSITE",freq:"opposite",pair:["fear","anger"],answerEn:"frozenness",answerKo:"정서마비"},
+      {category:"OPPOSITE",freq:"opposite",pair:["surprise","anticipation"],answerEn:"confusion",answerKo:"혼란"}
+];
+
+const categoryNames = {
+  PRIMARY:"PRIMARY DYADS",
+  SECONDARY:"SECONDARY DYADS",
+  TERTIARY:"TERTIARY DYADS",
+  OPPOSITE:"OPPOSITE DYADS"
+};
+const freqNames = {
+  often:"[often felt]",
+  sometimes:"[sometimes felt]",
+  seldom:"[seldom felt]",
+  opposite:"[opposites]"
+};
+
+let current = 0;
+
+const categoryPill = document.getElementById("category-pill");
+const freqPill = document.getElementById("freq-pill");
+const pairLabel = document.getElementById("pair-label");
+const pairBox = document.getElementById("emotion-pair");
+const ansBox = document.getElementById("answer-box");
+const showBtn = document.getElementById("show-answer-btn");
+const prevBtn = document.getElementById("prev-btn");
+const nextBtn = document.getElementById("next-btn");
+const slideNum = document.getElementById("slide-number");
+
+function render(i){
+  const s = slides[i];
+  const L = emotionMeta[s.pair[0]];
+  const R = emotionMeta[s.pair[1]];
+
+  categoryPill.textContent = categoryNames[s.category] || s.category;
+  freqPill.textContent = freqNames[s.freq] || s.freq;
+
+  pairLabel.textContent = `${L.en} + ${R.en} (${L.ko} + ${R.ko})`;
+
+  pairBox.innerHTML = `
+    <div class="emotion-box" style="background:${L.color}">${L.en}<br><span>(${L.ko})</span></div>
+    <div class="emotion-box" style="background:${R.color}">${R.en}<br><span>(${R.ko})</span></div>
+  `;
+
+  ansBox.classList.add("hidden");
+  ansBox.textContent = "정답이 여기 표시됩니다.";
+  showBtn.textContent = "정답 보기 · Show Answer";
+
+  slideNum.textContent = i+1;
+  prevBtn.disabled = i===0;
+  nextBtn.disabled = i===slides.length-1;
+}
+
+showBtn.onclick = function(){
+  if(ansBox.classList.contains("hidden")) {
+    let s = slides[current];
+    ansBox.classList.remove("hidden");
+    ansBox.innerHTML = `<strong>${s.answerEn}</strong> (${s.answerKo})`;
+    showBtn.textContent = "정답 가리기 · Hide Answer";
+  } else {
+    ansBox.classList.add("hidden");
+    ansBox.textContent = "정답이 여기 표시됩니다.";
+    showBtn.textContent = "정답 보기 · Show Answer";
+  }
+};
+
+prevBtn.onclick = () => { if(current>0){current--;render(current);} };
+nextBtn.onclick = () => { if(current<slides.length-1){current++;render(current);} };
+
+document.addEventListener("keydown", e => {
+  if(e.key==="ArrowLeft") prevBtn.onclick();
+  if(e.key==="ArrowRight") nextBtn.onclick();
+});
+
+render(0);
+</script>
+
+</body>
+</html>
