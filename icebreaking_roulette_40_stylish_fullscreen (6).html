@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>아이스브레이킹 룰렛</title>
+<style>
+:root {
+  --bg1:#0B1220; --bg2:#111827;
+  --card:rgba(255,255,255,0.08); --card2:rgba(255,255,255,0.10);
+  --stroke:rgba(255,255,255,0.14);
+  --text:#E5E7EB; --muted:rgba(229,231,235,0.72);
+  --shadow:0 18px 50px rgba(0,0,0,0.45);
+  --shadow2:0 10px 30px rgba(0,0,0,0.35);
+  --radius:18px;
+}
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic","Nanum Gothic",Arial,sans-serif;
+  color:var(--text);
+  background:
+    radial-gradient(1200px 800px at 15% 20%, rgba(124,58,237,0.25), transparent 55%),
+    radial-gradient(1200px 800px at 85% 35%, rgba(37,99,235,0.25), transparent 55%),
+    radial-gradient(1200px 800px at 40% 90%, rgba(5,150,105,0.22), transparent 55%),
+    linear-gradient(180deg,var(--bg1),var(--bg2));
+  overflow:hidden;
+}
+.app{
+  height:100%;
+  display:grid;
+  grid-template-columns:minmax(320px,520px) 1fr;
+  gap:18px;
+  padding:18px;
+}
+@media (max-width:980px){
+  body{overflow:auto;}
+  .app{grid-template-columns:1fr; padding:14px;}
+}
+.panel{
+  border:1px solid var(--stroke);
+  background:linear-gradient(180deg,var(--card),var(--card2));
+  border-radius:var(--radius);
+  box-shadow:var(--shadow2);
+  padding:16px;
+  backdrop-filter:blur(10px);
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  min-height:0;
+}
+.title h1{margin:0;font-size:18px;font-weight:900;letter-spacing:-0.2px;}
+.title p{margin:6px 0 0;font-size:12px;color:var(--muted);line-height:1.35;}
+.fsHint{display:inline-flex;gap:8px;align-items:center;font-size:12px;color:var(--muted);margin-top:4px;}
+kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;font-size:11px;padding:2px 6px;border-radius:8px;border:1px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.06);color:var(--text);}
+
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:2px;}
+.chip{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:999px;border:1px solid var(--stroke);background:rgba(255,255,255,0.06);font-size:12px;font-weight:800;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+.dot{width:10px;height:10px;border-radius:999px;flex:0 0 auto;box-shadow:0 0 0 4px rgba(255,255,255,0.08);}
+
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;}
+.btn{
+  appearance:none;border:1px solid var(--stroke);
+  background:rgba(255,255,255,0.06);color:var(--text);
+  border-radius:14px;padding:12px 12px;font-weight:900;letter-spacing:-0.2px;
+  cursor:pointer;box-shadow:0 10px 22px rgba(0,0,0,0.25);
+  transition:transform 120ms ease, background 120ms ease, border-color 120ms ease;
+}
+.btn:hover{transform:translateY(-1px);background:rgba(255,255,255,0.10);border-color:rgba(255,255,255,0.22);}
+.btn:active{transform:translateY(0px);}
+.btn.primary{background:linear-gradient(135deg, rgba(37,99,235,0.95), rgba(124,58,237,0.92));border-color:rgba(255,255,255,0.18);}
+.btn.primary:hover{background:linear-gradient(135deg, rgba(37,99,235,1.0), rgba(124,58,237,1.0));}
+.btn[disabled]{opacity:0.55;cursor:not-allowed;transform:none !important;}
+
+.result{
+  border:1px solid var(--stroke);
+  border-radius:var(--radius);
+  padding:14px 14px 12px;
+  background:rgba(0,0,0,0.22);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,0.03);
+  min-height:120px;
+  display:grid;gap:8px;align-content:start;
+}
+.result__label{display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--muted);font-size:12px;font-weight:800;}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,0.16);background:rgba(255,255,255,0.06);font-weight:900;color:var(--text);}
+.result__q{font-size:20px;font-weight:1000;letter-spacing:-0.4px;line-height:1.25;word-break:keep-all;text-align:left;}
+.result.animate{animation:pop 420ms cubic-bezier(.2,.9,.2,1);}
+@keyframes pop{0%{transform:translateY(6px) scale(0.98);opacity:0.2;}60%{transform:translateY(0px) scale(1.01);opacity:1;}100%{transform:translateY(0px) scale(1.0);opacity:1;}}
+
+.tips{margin-top:2px;color:var(--muted);font-size:12px;line-height:1.45;}
+
+.stage{border:1px solid var(--stroke);background:linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));border-radius:var(--radius);box-shadow:var(--shadow);display:grid;place-items:center;position:relative;overflow:hidden;min-height:0;}
+.wheelWrap{position:relative;width:min(78vh,86vw,760px);aspect-ratio:1/1;display:grid;place-items:center;padding:14px;}
+canvas{width:100%;height:100%;border-radius:50%;background:rgba(255,255,255,0.02);box-shadow:0 22px 65px rgba(0,0,0,0.55);}
+.pointer{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:18px solid transparent;border-right:18px solid transparent;border-bottom:30px solid #EF4444;filter:drop-shadow(0 6px 12px rgba(0,0,0,0.45));}
+.centerCap{position:absolute;width:120px;height:120px;border-radius:999px;background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.55), rgba(255,255,255,0.10) 45%, rgba(0,0,0,0.25) 75%),linear-gradient(135deg, rgba(37,99,235,0.9), rgba(124,58,237,0.9));border:1px solid rgba(255,255,255,0.22);box-shadow:0 18px 45px rgba(0,0,0,0.45);display:grid;place-items:center;text-align:center;padding:10px;user-select:none;pointer-events:none;}
+.capText{font-weight:1000;font-size:14px;letter-spacing:-0.2px;line-height:1.15;}
+.capSub{margin-top:4px;font-size:11px;color:rgba(255,255,255,0.85);font-weight:800;}
+
+.confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.confetti i{position:absolute;border-radius:3px;opacity:0.9;transform:translateY(-20px) rotate(0deg);animation:fall 900ms ease-in forwards;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.25));}
+@keyframes fall{to{transform:translateY(120vh) rotate(720deg);opacity:0.95;}}
+</style>
+</head>
+<body>
+  <div class="app">
+    <aside class="panel">
+      <div class="title">
+        <div>
+          <h1>아이스브레이킹 룰렛</h1>
+          <p>룰렛을 돌려 질문을 선택합니다. 선택된 질문은 아래에 크게 표시됩니다.</p>
+          <div class="fsHint">전체화면: <kbd>F</kbd> · 다시 돌리기: <kbd>Space</kbd></div>
+        </div>
+      </div>
+
+      <div class="legend" id="legend"></div>
+
+      <div class="controls">
+        <button class="btn primary" id="spinBtn">룰렛 돌리기</button>
+        <button class="btn" id="fsBtn">전체화면</button>
+      </div>
+
+      <div class="result" id="resultBox" aria-live="polite">
+        <div class="result__label">
+          <span>선택된 질문</span>
+          <span class="pill"><span class="dot" id="catDot"></span><span id="catText">—</span></span>
+        </div>
+        <div class="result__q" id="resultText">버튼을 눌러 시작하세요.</div>
+      </div>
+
+      <div class="tips">
+        운영 팁: 한 사람 당 Pass 2회 가능. 질문에 대해 60초 내로 간단히 답변하기. 나머지 조원들은 한 가지 추가 질문을 덧붙여 대화를 자연스럽게 확장해 나갑니다.
+      </div>
+    </aside>
+
+    <section class="stage" id="stage">
+      <div class="wheelWrap">
+        <div class="pointer" aria-hidden="true"></div>
+        <canvas id="wheel" width="900" height="900"></canvas>
+        </div>
+        <div class="confetti" id="confetti" aria-hidden="true"></div>
+      </div>
+    </section>
+  </div>
+
+<script>
+  const DATA = [{"cat": "워밍업", "q": "나를 한 단어로 표현한다면? 그 이유는?", "c1": "#2563EB", "c2": "#93C5FD"}, {"cat": "워밍업", "q": "요즘 나를 가장 설레게 하는 것은?", "c1": "#2563EB", "c2": "#93C5FD"}, {"cat": "워밍업", "q": "최근 가장 많이 들은 말은?", "c1": "#2563EB", "c2": "#93C5FD"}, {"cat": "워밍업", "q": "내가 의외로 잘하는 한 가지는?", "c1": "#2563EB", "c2": "#93C5FD"}, {"cat": "워밍업", "q": "나를 색깔로 표현한다면? 왜 그 색인가?", "c1": "#2563EB", "c2": "#93C5FD"}, {"cat": "워밍업", "q": "내가 좋아하는 장소와 그 이유", "c1": "#2563EB", "c2": "#93C5FD"}, {"cat": "워밍업", "q": "나의 하루 중 가장 좋아하는 시간", "c1": "#2563EB", "c2": "#93C5FD"}, {"cat": "워밍업", "q": "내가 스트레스를 푸는 방법", "c1": "#2563EB", "c2": "#93C5FD"}, {"cat": "워밍업", "q": "나의 숨은 취미", "c1": "#2563EB", "c2": "#93C5FD"}, {"cat": "워밍업", "q": "지금의 나를 상징하는 키워드 세 가지", "c1": "#2563EB", "c2": "#93C5FD"}, {"cat": "강점 & 가치", "q": "내가 중요하게 생각하는 가치 한 가지", "c1": "#059669", "c2": "#86EFAC"}, {"cat": "강점 & 가치", "q": "친구들이 나에게 기대하는 역할은?", "c1": "#059669", "c2": "#86EFAC"}, {"cat": "강점 & 가치", "q": "내가 몰입했던 경험 한 가지", "c1": "#059669", "c2": "#86EFAC"}, {"cat": "강점 & 가치", "q": "힘든 상황을 극복했던 방식", "c1": "#059669", "c2": "#86EFAC"}, {"cat": "강점 & 가치", "q": "앞으로 더 키우고 싶은 역량", "c1": "#059669", "c2": "#86EFAC"}, {"cat": "강점 & 가치", "q": "나의 장점 한 가지와 그 근거", "c1": "#059669", "c2": "#86EFAC"}, {"cat": "강점 & 가치", "q": "내가 존경하는 인물과 그 이유", "c1": "#059669", "c2": "#86EFAC"}, {"cat": "강점 & 가치", "q": "내가 가장 성취감을 느꼈던 순간", "c1": "#059669", "c2": "#86EFAC"}, {"cat": "강점 & 가치", "q": "나를 성장하게 만든 경험", "c1": "#059669", "c2": "#86EFAC"}, {"cat": "강점 & 가치", "q": "내가 타인에게 줄 수 있는 긍정적 영향", "c1": "#059669", "c2": "#86EFAC"}, {"cat": "대학 비전", "q": "대학에서 가장 기대되는 점", "c1": "#D97706", "c2": "#FCD34D"}, {"cat": "대학 비전", "q": "대학생활에서 가장 걱정되는 점", "c1": "#D97706", "c2": "#FCD34D"}, {"cat": "대학 비전", "q": "1학년 동안 꼭 해보고 싶은 것", "c1": "#D97706", "c2": "#FCD34D"}, {"cat": "대학 비전", "q": "내가 꿈꾸는 대학생활의 모습", "c1": "#D97706", "c2": "#FCD34D"}, {"cat": "대학 비전", "q": "나만의 시간관리 전략이 있다면?", "c1": "#D97706", "c2": "#FCD34D"}, {"cat": "대학 비전", "q": "참여해보고 싶은 동아리 또는 활동", "c1": "#D97706", "c2": "#FCD34D"}, {"cat": "대학 비전", "q": "4년 후 나의 모습은 어떠하기를 바라는가?", "c1": "#D97706", "c2": "#FCD34D"}, {"cat": "대학 비전", "q": "대학에서 배우고 싶은 핵심 역량", "c1": "#D97706", "c2": "#FCD34D"}, {"cat": "대학 비전", "q": "나의 학업 목표 한 가지", "c1": "#D97706", "c2": "#FCD34D"}, {"cat": "대학 비전", "q": "실패를 대하는 나의 태도", "c1": "#D97706", "c2": "#FCD34D"}, {"cat": "Fun & Energy", "q": "내가 만약 동물이라면 무엇일까? 그 이유는?", "c1": "#7C3AED", "c2": "#C4B5FD"}, {"cat": "Fun & Energy", "q": "나의 하루를 영화 제목으로 만든다면?", "c1": "#7C3AED", "c2": "#C4B5FD"}, {"cat": "Fun & Energy", "q": "내가 갑자기 유명해진다면, 무엇 때문에일 것 같은가?", "c1": "#7C3AED", "c2": "#C4B5FD"}, {"cat": "Fun & Energy", "q": "평생 한 가지 음식만 먹어야 한다면 무엇을 선택할까?", "c1": "#7C3AED", "c2": "#C4B5FD"}, {"cat": "Fun & Energy", "q": "내가 하루 동안 투명인간이 된다면 가장 먼저 할 일은?", "c1": "#7C3AED", "c2": "#C4B5FD"}, {"cat": "Fun & Energy", "q": "내가 몰래 갖고 있는 쓸데없는(?) 특기는 무엇인가?", "c1": "#7C3AED", "c2": "#C4B5FD"}, {"cat": "Fun & Energy", "q": "갑자기 무인도에 가게 된다면 꼭 가져가고 싶은 한 가지는?", "c1": "#7C3AED", "c2": "#C4B5FD"}, {"cat": "Fun & Energy", "q": "내가 팀 프로젝트에서 맡게 될 것 같은 역할은?", "c1": "#7C3AED", "c2": "#C4B5FD"}, {"cat": "Fun & Energy", "q": "어린 시절 장래희망은 무엇이었는가? 지금과 얼마나 다른가?", "c1": "#7C3AED", "c2": "#C4B5FD"}, {"cat": "Fun & Energy", "q": "지금 당장 10억이 생긴다면 가장 먼저 할 일은?", "c1": "#7C3AED", "c2": "#C4B5FD"}];
+
+  const canvas = document.getElementById("wheel");
+  const ctx = canvas.getContext("2d");
+  const spinBtn = document.getElementById("spinBtn");
+  const fsBtn = document.getElementById("fsBtn");
+
+  const resultBox = document.getElementById("resultBox");
+  const resultText = document.getElementById("resultText");
+  const catText = document.getElementById("catText");
+  const catDot = document.getElementById("catDot");
+  const confetti = document.getElementById("confetti");
+  const legend = document.getElementById("legend");
+
+  const slices = DATA.length;
+  const TAU = Math.PI * 2;
+  const sliceAngle = TAU / slices;
+
+  let startAngle = 0;
+  let spinning = false;
+
+  function buildLegend() {
+    const seen = new Map();
+    DATA.forEach(d => { if (!seen.has(d.cat)) seen.set(d.cat, d); });
+    legend.innerHTML = Array.from(seen.values()).map(d =>
+      '<div class="chip"><span class="dot" style="background:' + d.c1 + ';"></span><span>' + d.cat + '</span></div>'
+    ).join('');
+  }
+
+  function crisp() {
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const size = 900;
+    canvas.width = Math.floor(size * dpr);
+    canvas.height = Math.floor(size * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function drawWheel() {
+    const W = 900, H = 900;
+    const cx = W/2, cy = H/2;
+    const R = 430;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // Outer ring glow
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, R+18, 0, TAU);
+    const rg = ctx.createRadialGradient(cx, cy, R-40, cx, cy, R+22);
+    rg.addColorStop(0, "rgba(255,255,255,0.00)");
+    rg.addColorStop(1, "rgba(255,255,255,0.14)");
+    ctx.fillStyle = rg;
+    ctx.fill();
+    ctx.restore();
+
+    for (let i = 0; i < slices; i++) {
+      const d = DATA[i];
+      const a0 = startAngle + i * sliceAngle;
+      const a1 = a0 + sliceAngle;
+
+      const mid = (a0 + a1) / 2;
+      const gx = cx + Math.cos(mid) * (R * 0.25);
+      const gy = cy + Math.sin(mid) * (R * 0.25);
+
+      const grad = ctx.createRadialGradient(gx, gy, 10, cx, cy, R);
+      grad.addColorStop(0, d.c2);
+      grad.addColorStop(1, d.c1);
+
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, R, a0, a1);
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      ctx.strokeStyle = "rgba(255,255,255,0.18)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // index number
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(mid);
+      ctx.textAlign = "right";
+      ctx.fillStyle = "rgba(15,23,42,0.85)";
+      ctx.font = "800 15px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+      ctx.fillText(String(i+1), R - 18, 6);
+      ctx.restore();
+    }
+
+    // Inner ring
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, 145, 0, TAU);
+    const ig = ctx.createRadialGradient(cx-30, cy-30, 10, cx, cy, 160);
+    ig.addColorStop(0, "rgba(255,255,255,0.55)");
+    ig.addColorStop(0.45, "rgba(255,255,255,0.16)");
+    ig.addColorStop(1, "rgba(0,0,0,0.28)");
+    ctx.fillStyle = ig;
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function normalizeAngle(a) {
+    const t = a % TAU;
+    return t < 0 ? t + TAU : t;
+  }
+
+  function currentIndex() {
+    // Pointer at top (-90deg). In canvas, 0 rad points right, so top is 3/2 TAU.
+    const a = normalizeAngle(startAngle);
+    const pointer = TAU * 0.75;
+    const rel = normalizeAngle(pointer - a);
+    return Math.floor(rel / sliceAngle) % slices;
+  }
+
+  function setResult(idx) {
+    const d = DATA[idx];
+    resultText.textContent = d.q;
+    catText.textContent = d.cat;
+    catDot.style.background = d.c1;
+
+    resultBox.classList.remove("animate");
+    void resultBox.offsetWidth;
+    resultBox.classList.add("animate");
+
+    burstConfetti([d.c1, d.c2]);
+  }
+
+  function burstConfetti(colors) {
+    confetti.innerHTML = "";
+    const n = 32;
+    for (let i = 0; i < n; i++) {
+      const el = document.createElement("i");
+      const x = Math.random() * 100;
+      const delay = Math.random() * 120;
+      const w = 6 + Math.random() * 8;
+      const h = 10 + Math.random() * 16;
+      const rot = (Math.random() * 90) - 45;
+      const c = colors[Math.floor(Math.random() * colors.length)];
+      el.style.left = x + "%";
+      el.style.animationDelay = delay + "ms";
+      el.style.width = w + "px";
+      el.style.height = h + "px";
+      el.style.background = c;
+      el.style.transform = "translateY(-30px) rotate(" + rot + "deg)";
+      confetti.appendChild(el);
+    }
+    setTimeout(() => { confetti.innerHTML = ""; }, 1100);
+  }
+
+  function spin() {
+    if (spinning) return;
+    spinning = true;
+    spinBtn.disabled = true;
+
+    const turns = 6 + Math.random() * 4; // 6-10
+    const extra = Math.random() * TAU;
+    const target = startAngle + turns * TAU + extra;
+
+    const duration = 4200 + Math.random() * 500;
+    const start = performance.now();
+    const from = startAngle;
+
+    function easeOutCubic(t) {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+    function animate(now) {
+      const t = Math.min(1, (now - start) / duration);
+      const e = easeOutCubic(t);
+      const wobble = (1 - t) * 0.015 * Math.sin(t * 60);
+      startAngle = from + (target - from) * e + wobble;
+      drawWheel();
+
+      if (t < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        spinning = false;
+        spinBtn.disabled = false;
+        setResult(currentIndex());
+      }
+    }
+
+    requestAnimationFrame(animate);
+  }
+
+  async function toggleFullscreen() {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (e) {}
+  }
+
+  // Keyboard shortcuts
+  window.addEventListener("keydown", (e) => {
+    if (e.code === "Space") { e.preventDefault(); spin(); }
+    if (e.key && e.key.toLowerCase() === "f") { toggleFullscreen(); }
+  });
+
+  spinBtn.addEventListener("click", spin);
+  fsBtn.addEventListener("click", toggleFullscreen);
+  window.addEventListener("resize", () => { crisp(); drawWheel(); });
+
+  buildLegend();
+  crisp();
+  drawWheel();
+</script>
+</body>
+</html>
